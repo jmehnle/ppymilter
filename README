@@ -1,0 +1,31 @@
+PpyMilter
+=========
+
+$Id:$
+
+PPyMilter is a mail filtering API implementing the Sendmail milter protocol
+in pure Python.  It is the python equivalent of "Sendmail::PMilter".  This
+library allows MTAs implementing the milter API to filter and modify mail
+in transit during the SMTP connection.
+
+
+COPYRIGHT AND LICENSE
+
+The PPyMilter project is hosted at:
+  http://code.google.com/p/ppymilter
+
+==============================================================================
+Copyright 2008 Google Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+==============================================================================
