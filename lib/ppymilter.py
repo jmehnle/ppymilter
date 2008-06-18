@@ -417,11 +417,11 @@ class PpyMilter:
     dispatcher.
 
     Args:
-      code: Integer or digit string (should be \d\d\d).
+      code: Integer or digit string (should be \d\d\d).  NOTICE: A '421' reply
+            code will cause sendmail to close the connection after responding!
+            (https://www.sendmail.org/releases/8.13.0.html)
       text: Code reason/explaination to send to the user.
     """
-    # BEWARE: a '421' will cause sendmail to immediately close connection
-
     return (RESPONSE['REPLYCODE'], '%s %s\0' % (code, text))
 
   # you probably should not be overriding this  :-p
