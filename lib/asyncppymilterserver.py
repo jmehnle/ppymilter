@@ -118,9 +118,9 @@ class AsyncPpyMilterServer(asyncore.dispatcher):
     def read_packetlen(self):
       """Callback from asynchat once we have an integer accumulated in our
       input buffer (the milter packet length)."""
-      self.__packetlen = int(struct.unpack('!I', "".join(self.__input))[0] - 1)
+      packetlen = int(struct.unpack('!I', "".join(self.__input))[0])
       self.__input = []
-      self.set_terminator(self.__packetlen + 1)
+      self.set_terminator(packetlen)
       self.found_terminator = self.read_milter_data
 
     def read_milter_data(self):
