@@ -22,9 +22,9 @@
 #"""
 #   import asyncore
 #   import ppymilterserver
-#   import ppymilter
+#   import ppymilterbase
 #
-#   class MyHandler(ppymilter.PpyMilter):
+#   class MyHandler(ppymilterbase.PpyMilter):
 #     def OnMailFrom(...):
 #       ...
 #   ...
@@ -52,7 +52,7 @@ import struct
 import sys
 import time
 
-import ppymilter
+import ppymilterbase
 
 
 MILTER_LEN_BYTES = 4  # from sendmail's include/libmilter/mfdef.h
@@ -112,7 +112,7 @@ class AsyncPpyMilterServer(asyncore.dispatcher):
       asynchat.async_chat.__init__(self, conn)
       self.__conn = conn
       self.__addr = addr
-      self.__milter_dispatcher = ppymilter.PpyMilterDispatcher(milter_class)
+      self.__milter_dispatcher = ppymilterbase.PpyMilterDispatcher(milter_class)
       self.__input = []
       self.set_terminator(MILTER_LEN_BYTES)
       self.found_terminator = self.read_packetlen
@@ -147,7 +147,7 @@ class AsyncPpyMilterServer(asyncore.dispatcher):
         # rinse and repeat :)
         self.found_terminator = self.read_packetlen
         self.set_terminator(MILTER_LEN_BYTES)
-      except ppymilter.PpyMilterCloseConnection, e:
+      except ppymilterbase.PpyMilterCloseConnection, e:
         logging.info('Closing connection ("%s")', str(e))
         self.close()
 
@@ -165,7 +165,7 @@ class ThreadedPpyMilterServer(SocketServer.ThreadingTCPServer):
   class ConnectionHandler(SocketServer.BaseRequestHandler):
     def setup(self):
       self.request.setblocking(True)
-      self.__milter_dispatcher = ppymilter.PpyMilterDispatcher(
+      self.__milter_dispatcher = ppymilterbase.PpyMilterDispatcher(
           self.server.milter_class)
 
     def handle(self):
@@ -180,7 +180,7 @@ class ThreadedPpyMilterServer(SocketServer.ThreadingTCPServer):
             logging.debug('  >>> %s', binascii.b2a_qp(response[0]))
             self.request.send(struct.pack('!I', len(response)))
             self.request.send(response)
-        except ppymilter.PpyMilterCloseConnection, e:
+        except ppymilterbase.PpyMilterCloseConnection, e:
           logging.info('Closing connection ("%s")', str(e))
           break
 
@@ -188,15 +188,15 @@ class ThreadedPpyMilterServer(SocketServer.ThreadingTCPServer):
 # Allow running the library directly to demonstrate a simple example invocation.
 if __name__ == '__main__':
   port = 9999
-  try: port = sys.argv[1]
-  except IndexError: pass
+  try: port = int(sys.argv[1])
+  except Exception: pass
 
   logging.basicConfig(level=logging.DEBUG,
                       format='%(asctime)s %(levelname)s %(message)s',
                       datefmt='%Y-%m-%d@%H:%M:%S')
 
-  server = AsyncPpyMilterServer(port, ppymilter.PpyMilter)
+  server = AsyncPpyMilterServer(port, ppymilterbase.PpyMilter)
   asyncore.loop()
 
-  #server = ThreadedPpyMilterServer(port, ppymilter.PpyMilter)
+  #server = ThreadedPpyMilterServer(port, ppymilterbase.PpyMilter)
   #server.loop()
