@@ -26,4 +26,4 @@ setup(name='ppymilter',
       url='http://code.google.com/p/ppymilter',
       package_dir={'ppymilter': 'lib'},
       packages=['ppymilter'],
-      scripts=['lib/asyncppymilterserver.py'])
+      scripts=['lib/ppymilterserver.py'])
