@@ -33,7 +33,7 @@ import struct
 import sys
 
 
-MILTER_VERSION = 2 # Milter version we know we claim to speak (from pmilter)
+MILTER_VERSION = 2 # Milter version we claim to speak (from pmilter)
 
 # Potential milter command codes and their corresponding PpyMilter callbacks.
 # From sendmail's include/libmilter/mfdef.h
@@ -94,6 +94,20 @@ def printchar(char):
   print ('char: %s [qp=%s][hex=%s][base64=%s]' %
          (char, binascii.b2a_qp(char), binascii.b2a_hex(char),
           binascii.b2a_base64(char)))
+
+
+def CanonicalizeAddress(addr):
+  """Strip angle brackes from email address iff not an empty address ("<>").
+
+  Args:
+    addr: the email address to canonicalize (strip angle brackets from).
+
+  Returns:
+    The addr with leading and trailing angle brackets removed unless
+    the address is "<>" (in which case the string is returned unchanged).
+  """
+  if addr == '<>': return addr
+  return addr.lstrip('<').rstrip('>')
 
 
 class PpyMilterException(Exception):
@@ -265,11 +279,11 @@ class PpyMilterDispatcher:
     Returns:
       A tuple (cmd, mailfrom, esmtp_info) where:
         cmd: The single character command code representing this command.
-        mailfrom: The MAIL From email address.
+        mailfrom: The canonicalized MAIL From email address.
         esmtp_info: Extended SMTP (esmtp) info as a list of strings.
     """
     (mailfrom, esmtp_info) = data.split('\0', 1)
-    return (cmd, mailfrom, esmtp_info.split('\0'))
+    return (cmd, CanonicalizeAddress(mailfrom), esmtp_info.split('\0'))
 
   def _ParseRcptTo(self, cmd, data):
     """Parse the 'RcptTo' milter data into arguments for the milter handler.
@@ -281,11 +295,11 @@ class PpyMilterDispatcher:
     Returns:
       A tuple (cmd, rcptto, emstp_info) where:
         cmd: The single character command code representing this command.
-        rcptto: The RCPT To email address.
+        rcptto: The canonicalized RCPT To email address.
         esmtp_info: Extended SMTP (esmtp) info as a list of strings.
     """
     (rcptto, esmtp_info) = data.split('\0', 1)
-    return (cmd, rcptto, esmtp_info.split('\0'))
+    return (cmd, CanonicalizeAddress(rcptto), esmtp_info.split('\0'))
 
   def _ParseHeader(self, cmd, data):
     """Parse the 'Header' milter data into arguments for the milter handler.
@@ -346,6 +360,19 @@ class PpyMilterDispatcher:
 
   def _ParseQuit(self, cmd, data):
     """Parse the 'Quit' milter data into arguments for the milter handler.
+
+    Args:
+      cmd: A single character command code representing this command.
+      data: Command-specific milter data to be unpacked/parsed.
+
+    Returns:
+      A tuple (cmd) where:
+        cmd: The single character command code representing this command.
+    """
+    return (cmd)
+
+  def _ParseAbort(self, cmd, data):
+    """Parse the 'Abort' milter data into arguments for the milter handler.
 
     Args:
       cmd: A single character command code representing this command.
@@ -451,6 +478,14 @@ class PpyMilter:
     PpyMilterCloseConnection() exception.
     """
     raise PpyMilterCloseConnection('received quit command')
+
+  def OnAbort(self, cmd):
+    """Callback for the 'Abort' milter command: abort the milter connection.
+
+    The only logical response is to ultimately raise a
+    PpyMilterCloseConnection() exception.
+    """
+    raise PpyMilterCloseConnection('received abort command')
 
   # Call these from __init__() (after calling PpyMilter.__init__()  :-p
   # to tell sendmail you may perform these actions
