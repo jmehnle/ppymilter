@@ -1,4 +1,4 @@
-# $Id$
+# $Id: //depot/ops/experimental/ppymilter/lib/ppymilterbase.py#2 $
 # ==============================================================================
 # Copyright 2008 Google Inc.
 #
@@ -31,27 +31,43 @@ import os
 import socket
 import struct
 import sys
+import types
 
 
 MILTER_VERSION = 2 # Milter version we claim to speak (from pmilter)
 
 # Potential milter command codes and their corresponding PpyMilter callbacks.
 # From sendmail's include/libmilter/mfdef.h
+SMFIC_ABORT   = 'A' # "Abort"
+SMFIC_BODY    = 'B' # "Body chunk"
+SMFIC_CONNECT = 'C' # "Connection information"
+SMFIC_MACRO   = 'D' # "Define macro"
+SMFIC_BODYEOB = 'E' # "final body chunk (End)"
+SMFIC_HELO    = 'H' # "HELO/EHLO"
+SMFIC_HEADER  = 'L' # "Header"
+SMFIC_MAIL    = 'M' # "MAIL from"
+SMFIC_EOH     = 'N' # "EOH"
+SMFIC_OPTNEG  = 'O' # "Option negotation"
+SMFIC_RCPT    = 'R' # "RCPT to"
+SMFIC_QUIT    = 'Q' # "QUIT"
+SMFIC_DATA    = 'T' # "DATA"
+SMFIC_UNKNOWN = 'U' # "Any unknown command"
+
 COMMANDS = {
-  'A': 'Abort',      # SMFIC_ABORT   # "Abort"
-  'B': 'Body',       # SMFIC_BODY    # "Body chunk"
-  'C': 'Connect',    # SMFIC_CONNECT # "Connection information"
-  'D': 'Macro',      # SMFIC_MACRO   # "Define macro"
-  'E': 'EndBody',    # SMFIC_BODYEOB # "final body chunk (End)"
-  'H': 'Helo',       # SMFIC_HELO    # "HELO/EHLO"
-  'L': 'Header',     # SMFIC_HEADER  # "Header"
-  'M': 'MailFrom',   # SMFIC_MAIL    # "MAIL from"
-  'N': 'EndHeaders', # SMFIC_EOH     # "EOH"
-  'O': 'OptNeg',     # SMFIC_OPTNEG  # "Option negotation"
-  'R': 'RcptTo',     # SMFIC_RCPT    # "RCPT to"
-  'Q': 'Quit',       # SMFIC_QUIT    # "QUIT"
-  'T': 'Data',       # SMFIC_DATA    # "DATA"
-  'U': 'Unknown',    # SMFIC_UNKNOWN # "Any unknown command"
+  SMFIC_ABORT: 'Abort',
+  SMFIC_BODY: 'Body',
+  SMFIC_CONNECT: 'Connect',
+  SMFIC_MACRO: 'Macro',
+  SMFIC_BODYEOB: 'EndBody',
+  SMFIC_HELO: 'Helo',
+  SMFIC_HEADER: 'Header',
+  SMFIC_MAIL: 'MailFrom',
+  SMFIC_EOH: 'EndHeaders',
+  SMFIC_OPTNEG: 'OptNeg',
+  SMFIC_RCPT: 'RcptTo',
+  SMFIC_QUIT: 'Quit',
+  SMFIC_DATA: 'Data',
+  SMFIC_UNKNOWN: 'Unknown',
   }
 
 # To register/mask callbacks during milter protocol negotiation with sendmail.
@@ -81,7 +97,7 @@ RESPONSE = {
     'INSHEADER'  : 'i', # SMFIR_INSHEADER  # "insert header"
     'CHGHEADER'  : 'm', # SMFIR_CHGHEADER  # "change header"
     'PROGRESS'   : 'p', # SMFIR_PROGRESS   # "progress"
-    'QUARANTINE' : 'q', # SMFIR_QUARENTINE # "quarentine"
+    'QUARANTINE' : 'q', # SMFIR_QUARANTINE # "quarantine"
     'REJECT'     : 'r', # SMFIR_REJECT     # "reject"
     'SETSENDER'  : 's', # v3 only?
     'TEMPFAIL'   : 't', # SMFIR_TEMPFAIL   # "tempfail"
@@ -125,6 +141,9 @@ class PpyMilterTempFailure(PpyMilterException):
 
 class PpyMilterCloseConnection(PpyMilterException):
   """Exception that indicates the server should close the milter connection."""
+
+class PpyMilterActionError(PpyMilterException):
+  """Exception raised when an action is performed that was not negotiated."""
 
 
 class PpyMilterDispatcher:
@@ -185,12 +204,7 @@ class PpyMilterDispatcher:
       parser = getattr(self, parser_callback_name)
       callback = getattr(self.__milter, handler_callback_name)
       args = parser(cmd, data)
-      response_tuple = callback(*args)
-      try:
-        (code, response) = response_tuple
-        return '%s%s' % (code, response)
-      except TypeError, e:
-        return None # handler didn't return tuple: don't respond to the command
+      return callback(*args)
     except PpyMilterTempFailure, e:
       logging.info('Temp Failure: %s', str(e))
       return RESPONSE['TEMPFAIL']
@@ -349,14 +363,13 @@ class PpyMilterDispatcher:
 
     Args:
       cmd: A single character command code representing this command.
-      data: Command-specific milter data to be unpacked/parsed.
+      data: No data is sent for this command.
 
     Returns:
-      A tuple (cmd, data) where:
+      A tuple (cmd) where:
         cmd: The single character command code representing this command.
-        data: TODO: parse this better
     """
-    return (cmd, data)
+    return (cmd)
 
   def _ParseQuit(self, cmd, data):
     """Parse the 'Quit' milter data into arguments for the milter handler.
@@ -405,7 +418,7 @@ class PpyMilter:
   ACTION_ADDRCPT    = 4  # 0x04 SMFIF_ADDRCPT    # Add recipients
   ACTION_DELRCPT    = 8  # 0x08 SMFIF_DELRCPT    # Remove recipients
   ACTION_CHGHDRS    = 16 # 0x10 SMFIF_CHGHDRS    # Change or delete headers
-  ACTION_QUARENTINE = 32 # 0x20 SMFIF_QUARANTINE # Quarantine message
+  ACTION_QUARANTINE = 32 # 0x20 SMFIF_QUARANTINE # Quarantine message
 
   def __init__(self):
     """Construct a PpyMilter object.  Sets callbacks and registers
@@ -415,29 +428,30 @@ class PpyMilter:
     """
     self.__actions = 0
     self.__protocol = NO_CALLBACKS
+    self.__end_body_responses = []
     for (callback, flag) in CALLBACKS.iteritems():
       if hasattr(self, callback):
         self.__protocol &= ~flag
 
   def Accept(self):
     """Create an 'ACCEPT' response to return to the milter dispatcher."""
-    return (RESPONSE['ACCEPT'], '')
+    return RESPONSE['ACCEPT']
 
   def Reject(self):
     """Create a 'REJECT' response to return to the milter dispatcher."""
-    return (RESPONSE['REJECT'], '')
+    return RESPONSE['REJECT']
 
   def Discard(self):
     """Create a 'DISCARD' response to return to the milter dispatcher."""
-    return (RESPONSE['DISCARD'], '')
+    return RESPONSE['DISCARD']
 
   def TempFail(self):
     """Create a 'TEMPFAIL' response to return to the milter dispatcher."""
-    return (RESPONSE['TEMPFAIL'], '')
+    return RESPONSE['TEMPFAIL']
 
   def Continue(self):
     """Create an '' response to return to the milter dispatcher."""
-    return (RESPONSE['CONTINUE'], '')
+    return RESPONSE['CONTINUE']
 
   def CustomReply(self, code, text):
     """Create a 'REPLYCODE' (custom) response to return to the milter
@@ -449,7 +463,80 @@ class PpyMilter:
             (https://www.sendmail.org/releases/8.13.0.html)
       text: Code reason/explaination to send to the user.
     """
-    return (RESPONSE['REPLYCODE'], '%s %s\0' % (code, text))
+    return '%s%s %s\0' % (RESPONSE['REPLYCODE'], code, text)
+
+  def AddRecipient(self, rcpt):
+    """Add an ADDRCPT reply code to the list of responses that will be sent
+    automatically during the EndBody callback.
+
+    Args:
+      rcpt: The recipient to add, should have <> around it.
+    """
+    self.__VerifyCapability(self.ACTION_ADDRCPT)
+    self.__end_body_responses.append('%s%s\0' % (RESPONSE['ADDRCPT'], rcpt))
+
+  def AddHeader(self, name, value):
+    """Add an ADDHEADER reply code to the list of responses that will be sent
+    automatically during the EndBody callback
+
+    Args:
+      name: The name of the header to add
+      value: The value of the header
+    """
+    self.__VerifyCapability(self.ACTION_ADDHDRS)
+    self.__end_body_responses.append('%s%s\0%s\0' %
+                              (RESPONSE['ADDHEADER'], name, value))
+
+  def DeleteRecipient(self, rcpt):
+    """Add a DELRCPT reply code to the list of responses that will be sent
+    automatically during the EndBody callback.
+
+    Args:
+      rcpt: The recipient to delete, should have <> around it.
+    """
+    self.__VerifyCapability(self.ACTION_DELRCPT)
+    self.__end_body_responses.append('%s%s\0' % (RESPONSE['DELRCPT'], rcpt))
+
+  def InsertHeader(self, index, name, value):
+    """Insert a header, will be sent during EndBody callback.
+
+    Args:
+      index: The index to insert the header at. 0 is above all headers.
+             A number greater than the number of headers just appends.
+      name: The name of the header to insert.
+      value: The value to insert.
+    """
+    self.__VerifyCapability(self.ACTION_ADDHDRS)
+    index = struct.pack('!I', index)
+    self.__end_body_responses.append('%s%s%s\0%s\0' %
+                              (RESPONSE['INSHEADER'], index, name, value))
+
+  def ChangeHeader(self, index, name, value):
+    """Change a header, will be sent during EndBody callback.
+
+    Args:
+      index: The index of the header to change, offset from 1.
+             The offset is per-occurance of this header, not of all headers.
+             A value of '' (empty string) will cause the header to be deleted.
+      name: The name of the header to insert.
+      value: The value to insert.
+    """
+    self.__VerifyCapability(self.ACTION_CHGHDRS)
+    index = struct.pack('!I', index)
+    self.__end_body_responses.append('%s%s\0%s%s\0' %
+                              (RESPONSE['CHGHEADER'], name, index, value))
+
+  def __ResetState(self):
+    """Clear out any per-message data.
+
+    Milter connections correspond to SMTP connections, and many messages may be
+    sent in the same SMTP conversation. Any data stored that pertains to the
+    message that was just handled should be cleared so that it doesn't affect
+    processing of the next message. This method also implements an
+    'OnResetState' callback that milters can use to catch this situation too.
+    """
+    self.__end_body_responses = []
+    if hasattr(self, 'OnResetState'): self.OnResetState()
 
   # you probably should not be overriding this  :-p
   def OnOptNeg(self, cmd, ver, actions, protocol):
@@ -465,7 +552,7 @@ class PpyMilter:
     out = struct.pack('!III', MILTER_VERSION,
                       self.__actions & actions,
                       self.__protocol & protocol)
-    return (cmd, out)
+    return cmd+out
 
   def OnMacro(self, cmd, macro_cmd, data):
     """Callback for the 'Macro' milter command: no response required."""
@@ -480,13 +567,42 @@ class PpyMilter:
     raise PpyMilterCloseConnection('received quit command')
 
   def OnAbort(self, cmd):
-    """Callback for the 'Abort' milter command: abort the milter connection.
+    """Callback for the 'Abort' milter command.
 
-    The only logical response is to ultimately raise a
-    PpyMilterCloseConnection() exception.
+    This callback is required because per-message data must be cleared when an
+    Abort command is received. Otherwise any message modifications will end up
+    being applied to the next message that is sent down the same SMTP
+    connection.
+
+    Args:
+      cmd: Unused argument.
+
+    Returns:
+      A Continue response so that further messages in this SMTP conversation
+      will be processed.
     """
-    raise PpyMilterCloseConnection('received abort command')
+    self.__ResetState()
+    return self.Continue()
 
+  def OnEndBody(self, cmd):
+    """Callback for the 'EndBody' milter command.
+
+    This is required because any message modification must be done during this
+    callback. Any milter that uses this callback must call this method in the
+    superclass and return its return value. It should be called at the end of
+    the callback in the subclass.
+
+    Args:
+      cmd: Unused argument.
+
+    Returns:
+      a list of all the queued message modifications along with CONTINUE.
+    """
+    tmp = self.__end_body_responses
+    self.__ResetState()
+    tmp.append(self.Continue())
+    return tmp
+    
   # Call these from __init__() (after calling PpyMilter.__init__()  :-p
   # to tell sendmail you may perform these actions
   # (otherwise performing the actions may fail).
@@ -510,6 +626,12 @@ class PpyMilter:
     """Register that our milter may perform the action 'CHGHDRS'."""
     self.__actions |= self.ACTION_CHGHDRS
 
-  def CanQuarentine(self):
-    """Register that our milter may perform the action 'QUARENTINE'."""
-    self.__actions |= self.ACTION_QUARENTINE
+  def CanQuarantine(self):
+    """Register that our milter may perform the action 'QUARANTINE'."""
+    self.__actions |= self.ACTION_QUARANTINE
+
+  def __VerifyCapability(self, action):
+    if not (self.__actions & action):
+      logging.error('Error: Attempted to perform an action that was not' +
+                     'requested.')
+      raise PpyMilterActionError('Action not requested in __init__')

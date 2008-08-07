@@ -1,5 +1,5 @@
 #!/usr/bin/python2.4
-# $Id$
+# $Id: //depot/ops/experimental/ppymilter/lib/ppymilterserver.py#2 $
 # ==============================================================================
 # Copyright 2008 Google Inc.
 #
@@ -129,6 +129,17 @@ class AsyncPpyMilterServer(asyncore.dispatcher):
       self.set_terminator(packetlen)
       self.found_terminator = self.read_milter_data
 
+    def __send_response(self, response):
+      """Send data down the milter socket.
+
+      Args:
+        response: The data to send.
+      """
+      logging.debug('  >>> %s', binascii.b2a_qp(response[0]))
+      # TODO: can't send async w/ push() because of len(binary) failing!?!?
+      self.send(struct.pack('!I', len(response)))
+      self.send(response)
+
     def read_milter_data(self):
       """Callback from asynchat once we have read the milter packet length
       worth of bytes on the socket and it is accumulated in our input buffer
@@ -138,11 +149,11 @@ class AsyncPpyMilterServer(asyncore.dispatcher):
       logging.debug('  <<< %s', binascii.b2a_qp(inbuff))
       try:
         response = self.__milter_dispatcher.Dispatch(inbuff)
-        if response:
-          logging.debug('  >>> %s', binascii.b2a_qp(response[0]))
-          # TODO: can't send async w/ push() because of len(binary) failing!?!?
-          self.send(struct.pack('!I', len(response)))
-          self.send(response)
+        if type(response) == list:
+          for r in response:
+            self.__send_response(r)
+        elif response:
+          self.__send_response(response)
 
         # rinse and repeat :)
         self.found_terminator = self.read_packetlen
@@ -168,6 +179,16 @@ class ThreadedPpyMilterServer(SocketServer.ThreadingTCPServer):
       self.__milter_dispatcher = ppymilterbase.PpyMilterDispatcher(
           self.server.milter_class)
 
+    def __send_response(self, response):
+      """Send data down the milter socket.
+
+      Args:
+        response: the data to send
+      """
+      logging.debug('  >>> %s', binascii.b2a_qp(response[0]))
+      self.request.send(struct.pack('!I', len(response)))
+      self.request.send(response)
+    
     def handle(self):
       while True:
         packetlen = int(struct.unpack('!I',
@@ -176,10 +197,11 @@ class ThreadedPpyMilterServer(SocketServer.ThreadingTCPServer):
         logging.debug('  <<< %s', binascii.b2a_qp(data))
         try:
           response = self.__milter_dispatcher.Dispatch(data)
-          if response:
-            logging.debug('  >>> %s', binascii.b2a_qp(response[0]))
-            self.request.send(struct.pack('!I', len(response)))
-            self.request.send(response)
+          if type(response) == list:
+            for r in response:
+              self.__send_response(r)
+          elif response:
+            self.__send_response(response)
         except ppymilterbase.PpyMilterCloseConnection, e:
           logging.info('Closing connection ("%s")', str(e))
           break
