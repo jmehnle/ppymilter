@@ -1,4 +1,4 @@
-# $Id: //depot/ops/experimental/ppymilter/lib/ppymilterbase.py#2 $
+# $Id$
 # ==============================================================================
 # Copyright 2008 Google Inc.
 #

@@ -1,5 +1,5 @@
 #!/usr/bin/python2.4
-# $Id: //depot/ops/experimental/ppymilter/lib/ppymilterserver.py#2 $
+# $Id$
 # ==============================================================================
 # Copyright 2008 Google Inc.
 #
