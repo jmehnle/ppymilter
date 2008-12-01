@@ -136,9 +136,8 @@ class AsyncPpyMilterServer(asyncore.dispatcher):
         response: The data to send.
       """
       logging.debug('  >>> %s', binascii.b2a_qp(response[0]))
-      # TODO: can't send async w/ push() because of len(binary) failing!?!?
-      self.send(struct.pack('!I', len(response)))
-      self.send(response)
+      self.push(struct.pack('!I', len(response)))
+      self.push(response)
 
     def read_milter_data(self):
       """Callback from asynchat once we have read the milter packet length
