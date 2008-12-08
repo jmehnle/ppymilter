@@ -121,6 +121,13 @@ class AsyncPpyMilterServer(asyncore.dispatcher):
       """Callback from asynchat--simply buffer partial data in a string."""
       self.__input.append(data)
 
+    def log_info(self, message, type='info'):
+      """Provide useful logging for uncaught exceptions"""
+      if type == 'info':
+        logging.debug(message)
+      else:
+        logging.error(message)
+
     def read_packetlen(self):
       """Callback from asynchat once we have an integer accumulated in our
       input buffer (the milter packet length)."""
@@ -187,23 +194,31 @@ class ThreadedPpyMilterServer(SocketServer.ThreadingTCPServer):
       logging.debug('  >>> %s', binascii.b2a_qp(response[0]))
       self.request.send(struct.pack('!I', len(response)))
       self.request.send(response)
-    
+
     def handle(self):
-      while True:
-        packetlen = int(struct.unpack('!I',
-                                      self.request.recv(MILTER_LEN_BYTES))[0])
-        data = self.request.recv(packetlen)
-        logging.debug('  <<< %s', binascii.b2a_qp(data))
-        try:
-          response = self.__milter_dispatcher.Dispatch(data)
-          if type(response) == list:
-            for r in response:
-              self.__send_response(r)
-          elif response:
-            self.__send_response(response)
-        except ppymilterbase.PpyMilterCloseConnection, e:
-          logging.info('Closing connection ("%s")', str(e))
-          break
+      try:
+        while True:
+          packetlen = int(struct.unpack('!I',
+                                        self.request.recv(MILTER_LEN_BYTES))[0])
+          data = self.request.recv(packetlen)
+          logging.debug('  <<< %s', binascii.b2a_qp(data))
+          try:
+            response = self.__milter_dispatcher.Dispatch(data)
+            if type(response) == list:
+              for r in response:
+                self.__send_response(r)
+            elif response:
+              self.__send_response(response)
+          except ppymilterbase.PpyMilterCloseConnection, e:
+            logging.info('Closing connection ("%s")', str(e))
+            break
+      except Exception:
+        # use similar error production as asyncore as they already make
+        # good 1 line errors - similar to handle_error in asyncore.py
+        # proper cleanup happens regardless even if we catch this exception
+        (nil, t, v, tbinfo) = asyncore.compact_traceback()
+        logging.error('uncaptured python exception, closing channel %s '
+                      '(%s:%s %s)' % (repr(self), t, v, tbinfo))
 
 
 # Allow running the library directly to demonstrate a simple example invocation.
