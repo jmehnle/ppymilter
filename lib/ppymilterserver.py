@@ -171,10 +171,11 @@ class AsyncPpyMilterServer(asyncore.dispatcher):
 
 class ThreadedPpyMilterServer(SocketServer.ThreadingTCPServer):
 
+  allow_reuse_address = True
+
   def __init__(self, port, milter_class):
     SocketServer.ThreadingTCPServer.__init__(self, ('', port),
                                     ThreadedPpyMilterServer.ConnectionHandler)
-    self.allow_reuse_address = True
     self.milter_class = milter_class
     self.loop = self.serve_forever
 
@@ -200,7 +201,13 @@ class ThreadedPpyMilterServer(SocketServer.ThreadingTCPServer):
         while True:
           packetlen = int(struct.unpack('!I',
                                         self.request.recv(MILTER_LEN_BYTES))[0])
-          data = self.request.recv(packetlen)
+          inbuf = []
+          read = 0
+          while read < packetlen:
+            partial_data = self.request.recv(packetlen - read)
+            inbuf.append(partial_data)
+            read += len(partial_data)
+          data = "".join(inbuf)
           logging.debug('  <<< %s', binascii.b2a_qp(data))
           try:
             response = self.__milter_dispatcher.Dispatch(data)
