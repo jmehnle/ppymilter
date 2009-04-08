@@ -146,7 +146,7 @@ class PpyMilterActionError(PpyMilterException):
   """Exception raised when an action is performed that was not negotiated."""
 
 
-class PpyMilterDispatcher:
+class PpyMilterDispatcher(object):
   """Dispatcher class for a milter server.  This class accepts entire
   milter commands as a string (command character + binary data), parses
   the command and binary data appropriately and invokes the appropriate
@@ -398,7 +398,7 @@ class PpyMilterDispatcher:
     return (cmd)
 
 
-class PpyMilter:
+class PpyMilter(object):
   """Pure python milter handler base class.  Inherit from this class
   and override any On*() commands you would like your milter to handle.
   Register any actions your milter may perform using the Can*() functions
@@ -428,7 +428,6 @@ class PpyMilter:
     """
     self.__actions = 0
     self.__protocol = NO_CALLBACKS
-    self.__end_body_responses = []
     for (callback, flag) in CALLBACKS.iteritems():
       if hasattr(self, callback):
         self.__protocol &= ~flag
@@ -466,39 +465,35 @@ class PpyMilter:
     return '%s%s %s\0' % (RESPONSE['REPLYCODE'], code, text)
 
   def AddRecipient(self, rcpt):
-    """Add an ADDRCPT reply code to the list of responses that will be sent
-    automatically during the EndBody callback.
+    """Construct an ADDRCPT reply that the client can send during OnEndBody.
 
     Args:
       rcpt: The recipient to add, should have <> around it.
     """
     self.__VerifyCapability(self.ACTION_ADDRCPT)
-    self.__end_body_responses.append('%s%s\0' % (RESPONSE['ADDRCPT'], rcpt))
+    return '%s%s\0' % (RESPONSE['ADDRCPT'], rcpt)
 
   def AddHeader(self, name, value):
-    """Add an ADDHEADER reply code to the list of responses that will be sent
-    automatically during the EndBody callback
+    """Construct an ADDHEADER reply that the client can send during OnEndBody.
 
     Args:
       name: The name of the header to add
       value: The value of the header
     """
     self.__VerifyCapability(self.ACTION_ADDHDRS)
-    self.__end_body_responses.append('%s%s\0%s\0' %
-                              (RESPONSE['ADDHEADER'], name, value))
+    return '%s%s\0%s\0' % (RESPONSE['ADDHEADER'], name, value)
 
   def DeleteRecipient(self, rcpt):
-    """Add a DELRCPT reply code to the list of responses that will be sent
-    automatically during the EndBody callback.
+    """Construct an DELRCPT reply that the client can send during OnEndBody.
 
     Args:
       rcpt: The recipient to delete, should have <> around it.
     """
     self.__VerifyCapability(self.ACTION_DELRCPT)
-    self.__end_body_responses.append('%s%s\0' % (RESPONSE['DELRCPT'], rcpt))
+    return '%s%s\0' % (RESPONSE['DELRCPT'], rcpt)
 
   def InsertHeader(self, index, name, value):
-    """Insert a header, will be sent during EndBody callback.
+    """Construct an INSHEADER reply that the client can send during OnEndBody.
 
     Args:
       index: The index to insert the header at. 0 is above all headers.
@@ -508,11 +503,10 @@ class PpyMilter:
     """
     self.__VerifyCapability(self.ACTION_ADDHDRS)
     index = struct.pack('!I', index)
-    self.__end_body_responses.append('%s%s%s\0%s\0' %
-                              (RESPONSE['INSHEADER'], index, name, value))
+    return '%s%s%s\0%s\0' % (RESPONSE['INSHEADER'], index, name, value)
 
   def ChangeHeader(self, index, name, value):
-    """Change a header, will be sent during EndBody callback.
+    """Construct a CHGHEADER reply that the client can send during OnEndBody.
 
     Args:
       index: The index of the header to change, offset from 1.
@@ -523,8 +517,41 @@ class PpyMilter:
     """
     self.__VerifyCapability(self.ACTION_CHGHDRS)
     index = struct.pack('!I', index)
-    self.__end_body_responses.append('%s%s\0%s%s\0' %
-                              (RESPONSE['CHGHEADER'], name, index, value))
+    return '%s%s%s\0%s\0' % (RESPONSE['CHGHEADER'], index, name, value)
+
+  def ReturnOnEndBodyActions(self, actions):
+    """Construct an OnEndBody response that can consist of multiple actions
+    followed by a final required Continue().
+
+    All message mutations (all adds/changes/deletes to envelope/header/body)
+    must be sent as response to the OnEndBody callback.  Multiple actions
+    are allowed.  This function formats those multiple actions into one
+    response to return back to the PpyMilterDispatcher.
+
+    For example to make sure all recipients are in 'To' headers:
+    +---------------------------------------------------------------------
+    | class NoBccMilter(PpyMilterBase):
+    |  def __init__(self):
+    |    self.__mutations = []
+    |    ...
+    |  def OnRcptTo(self, cmd, rcpt_to, esmtp_info):
+    |    self.__mutations.append(self.AddHeader('To', rcpt_to))
+    |    return self.Continue()
+    |  def OnEndBody(self, cmd):
+    |    tmp = self.__mutations
+    |    self.__mutations = []
+    |    return self.ReturnOnEndBodyActions(tmp)
+    |  def OnResetState(self):
+    |    self.__mutations = []
+    +---------------------------------------------------------------------
+
+    Args:
+      actions: List of "actions" to perform on the message.
+               For example:
+                 actions=[AddHeader('Cc', 'lurker@example.com'),
+                          AddRecipient('lurker@example.com')]
+    """
+    return actions[:] + [self.Continue()]
 
   def __ResetState(self):
     """Clear out any per-message data.
@@ -535,8 +562,10 @@ class PpyMilter:
     processing of the next message. This method also implements an
     'OnResetState' callback that milters can use to catch this situation too.
     """
-    self.__end_body_responses = []
-    if hasattr(self, 'OnResetState'): self.OnResetState()
+    try:
+      self.OnResetState()
+    except AttributeError:
+      logging.warn('No OnResetState() callback is defined for this milter.')
 
   # you probably should not be overriding this  :-p
   def OnOptNeg(self, cmd, ver, actions, protocol):
@@ -587,22 +616,20 @@ class PpyMilter:
   def OnEndBody(self, cmd):
     """Callback for the 'EndBody' milter command.
 
-    This is required because any message modification must be done during this
-    callback. Any milter that uses this callback must call this method in the
-    superclass and return its return value. It should be called at the end of
-    the callback in the subclass.
+    If your milter wants to do any message mutations (add/change/delete any
+    envelope/header/body information) it needs to happen as a response to
+    this callback (so need to override this function and cause those
+    actions by returning using ReturnOnEndBodyActions() above).
 
     Args:
       cmd: Unused argument.
 
     Returns:
-      a list of all the queued message modifications along with CONTINUE.
+      A continue response so that further messages in this SMTP conversation
+      will be processed.
     """
-    tmp = self.__end_body_responses
-    self.__ResetState()
-    tmp.append(self.Continue())
-    return tmp
-    
+    return self.Continue()
+
   # Call these from __init__() (after calling PpyMilter.__init__()  :-p
   # to tell sendmail you may perform these actions
   # (otherwise performing the actions may fail).
