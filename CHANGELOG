@@ -1,0 +1,14 @@
+### Release 1.0
+
+* PpyMilter 1.0 message modification handling has changed and is NOT backwards
+  compatible with any previous PpyMilter release:
+  ppymilterbase.PpyMilter no longer stores internal state when clients
+  call message modification functions (e.g. ChangeHeader, AddRecipient, etc)
+  to store up and send at the proper phase in the milter protocol.  Instead
+  clients must store this state themselves, register an OnEndBody() function
+  and then "return self.ReturnOnEndBodyActions(modification_list)" to
+  send all modifications to a message.  See the the ppymilter wiki or the 
+  docstring for ppymilterbase.PpyMilter.ReturnOnEndBodyActions() for more 
+  info and an example.
+
+
