@@ -19,7 +19,7 @@
 from distutils.core import setup
 
 setup(name='ppymilter',
-      version='0.1',
+      version='1.0',
       description='Pure Python Milter Library',
       author='Eric DeFriez',
       author_email='codewhale@gmail.com',
