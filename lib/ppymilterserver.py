@@ -47,12 +47,12 @@ import binascii
 import logging
 import os
 import socket
-import SocketServer
+import socketserver
 import struct
 import sys
 import time
 
-import ppymilterbase
+from . import ppymilterbase
 
 
 MILTER_LEN_BYTES = 4  # from sendmail's include/libmilter/mfdef.h
@@ -85,7 +85,7 @@ class AsyncPpyMilterServer(asyncore.dispatcher):
     """Callback function from asyncore to handle a connection dispatching."""
     try:
       (conn, addr) = self.accept()
-    except socket.error, e:
+    except socket.error as e:
       logging.error('warning: server accept() threw an exception ("%s")',
                         str(e))
       return
@@ -155,7 +155,7 @@ class AsyncPpyMilterServer(asyncore.dispatcher):
       logging.debug('  <<< %s', binascii.b2a_qp(inbuff))
       try:
         response = self.__milter_dispatcher.Dispatch(inbuff)
-        if type(response) == list:
+        if isinstance(response, list):
           for r in response:
             self.__send_response(r)
         elif response:
@@ -164,23 +164,23 @@ class AsyncPpyMilterServer(asyncore.dispatcher):
         # rinse and repeat :)
         self.found_terminator = self.read_packetlen
         self.set_terminator(MILTER_LEN_BYTES)
-      except ppymilterbase.PpyMilterCloseConnection, e:
+      except ppymilterbase.PpyMilterCloseConnection as e:
         logging.info('Closing connection ("%s")', str(e))
         self.close()
 
 
-class ThreadedPpyMilterServer(SocketServer.ThreadingTCPServer):
+class ThreadedPpyMilterServer(socketserver.ThreadingTCPServer):
 
   allow_reuse_address = True
 
   def __init__(self, port, milter_class):
-    SocketServer.ThreadingTCPServer.__init__(self, ('', port),
+    socketserver.ThreadingTCPServer.__init__(self, ('', port),
                                     ThreadedPpyMilterServer.ConnectionHandler)
     self.milter_class = milter_class
     self.loop = self.serve_forever
 
 
-  class ConnectionHandler(SocketServer.BaseRequestHandler):
+  class ConnectionHandler(socketserver.BaseRequestHandler):
     def setup(self):
       self.request.setblocking(True)
       self.__milter_dispatcher = ppymilterbase.PpyMilterDispatcher(
@@ -211,12 +211,12 @@ class ThreadedPpyMilterServer(SocketServer.ThreadingTCPServer):
           logging.debug('  <<< %s', binascii.b2a_qp(data))
           try:
             response = self.__milter_dispatcher.Dispatch(data)
-            if type(response) == list:
+            if isinstance(response, list):
               for r in response:
                 self.__send_response(r)
             elif response:
               self.__send_response(response)
-          except ppymilterbase.PpyMilterCloseConnection, e:
+          except ppymilterbase.PpyMilterCloseConnection as e:
             logging.info('Closing connection ("%s")', str(e))
             break
       except Exception:

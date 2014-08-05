@@ -107,9 +107,9 @@ RESPONSE = {
 
 def printchar(char):
   """Useful debugging function for milter developers."""
-  print ('char: %s [qp=%s][hex=%s][base64=%s]' %
+  print(('char: %s [qp=%s][hex=%s][base64=%s]' %
          (char, binascii.b2a_qp(char), binascii.b2a_hex(char),
-          binascii.b2a_base64(char)))
+          binascii.b2a_base64(char))))
 
 
 def CanonicalizeAddress(addr):
@@ -205,10 +205,10 @@ class PpyMilterDispatcher(object):
       callback = getattr(self.__milter, handler_callback_name)
       args = parser(cmd, data)
       return callback(*args)
-    except PpyMilterTempFailure, e:
+    except PpyMilterTempFailure as e:
       logging.info('Temp Failure: %s', str(e))
       return RESPONSE['TEMPFAIL']
-    except PpyMilterPermFailure, e:
+    except PpyMilterPermFailure as e:
       logging.info('Perm Failure: %s', str(e))
       return RESPONSE['REJECT']
     return RESPONSE['CONTINUE']
@@ -428,7 +428,7 @@ class PpyMilter(object):
     """
     self.__actions = 0
     self.__protocol = NO_CALLBACKS
-    for (callback, flag) in CALLBACKS.iteritems():
+    for (callback, flag) in CALLBACKS.items():
       if hasattr(self, callback):
         self.__protocol &= ~flag
 
