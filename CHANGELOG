@@ -1,3 +1,16 @@
+### Release 1.0.1
+
+* Fork to GitHub: https://github.com/jmehnle/ppymilter
+* Make distribution `setup.py develop` compatible.
+  setuptools does not support non-root (non-empty) package names in the
+  `package_dir` option when installing the distribution in development mode
+  (`setup.py develop` or `pip install --editable`). In order to attain
+  "editable" compatibility, move lib/ contents under lib/ppymilter/ and use
+  a root (empty) package name in the `package_dir` option.
+  <https://bitbucket.org/pypa/setuptools/issue/230>
+  <https://bitbucket.org/tarek/distribute/issue/177>
+  <https://github.com/pypa/pip/issues/126>
+
 ### Release 1.0
 
 * PpyMilter 1.0 message modification handling has changed and is NOT backwards
@@ -11,4 +24,4 @@
   docstring for ppymilterbase.PpyMilter.ReturnOnEndBodyActions() for more 
   info and an example.
 
-
+# vim:sw=2 sts=2 tw=79

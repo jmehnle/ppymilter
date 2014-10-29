@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# $Id$
 # ==============================================================================
 # Copyright 2008 Google Inc.
 #
@@ -19,11 +18,11 @@
 from distutils.core import setup
 
 setup(name='ppymilter',
-      version='1.0',
+      version='1.0.1',
       description='Pure Python Milter Library',
-      author='Eric DeFriez',
-      author_email='codewhale@gmail.com',
-      url='http://code.google.com/p/ppymilter',
+      author='Eric DeFriez, Julian Mehnle',
+      author_email='julian@mehnle.net',
+      url='https://github.com/jmehnle/ppymilter',
       package_dir={'': 'lib'},
       packages=['ppymilter'],
       scripts=['lib/ppymilter/ppymilterserver.py'])
