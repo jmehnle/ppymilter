@@ -1,8 +1,6 @@
 PpyMilter
 =========
 
-$Id:$
-
 PpyMilter is a mail filtering API implementing the Sendmail milter protocol
 in pure Python.  It is the python equivalent of "Sendmail::PMilter".  This
 library allows MTAs implementing the milter API to filter and modify mail
@@ -11,7 +9,10 @@ in transit during the SMTP connection.
 
 COPYRIGHT AND LICENSE
 
-The PpyMilter project is hosted at:
+This version of ppymilter is hosted at:
+  https://github.com/jmehnle/ppymilter
+
+and was forked from the original at:
   http://code.google.com/p/ppymilter
 
 ==============================================================================
