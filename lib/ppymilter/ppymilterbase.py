@@ -329,6 +329,7 @@ class PpyMilterDispatcher(object):
         val: The value/data for the header.
     """
     (key, val) = data.split('\0', 1)
+    val, _ = val.split('\0', 1)
     return (cmd, key, val)
 
   def _ParseEndHeaders(self, cmd, data):
