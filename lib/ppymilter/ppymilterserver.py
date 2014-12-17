@@ -64,21 +64,31 @@ class AsyncPpyMilterServer(asyncore.dispatcher):
   """
 
   # TODO: allow network socket interface to be overridden
-  def __init__(self, port, milter_class, max_queued_connections=1024):
+  def __init__(self, sock_info_or_port, milter_class, max_queued_connections=1024, map=None):
     """Constructs an AsyncPpyMilterServer.
 
     Args:
-      port: A numeric port to listen on (TCP).
+      sock_info_or_port: A (sock_family, sock_addr) tuple, or a numeric port
+                         to listen on (TCP).
       milter_class: A class (not an instance) that handles callbacks for
                     milter commands (e.g. a child of the PpyMilter class).
       max_queued_connections: Maximum number of connections to allow to
                               queue up on socket awaiting accept().
     """
-    asyncore.dispatcher.__init__(self)
+    self.map = map
+    asyncore.dispatcher.__init__(self, map=self.map)
     self.__milter_class = milter_class
-    self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock_family = socket.AF_INET
+    sock_type   = socket.SOCK_STREAM
+    if isinstance(sock_info_or_port, tuple):
+        # Assume sock_family, sock_addr:
+        sock_family, sock_addr = sock_info_or_port
+    else:
+        # Assume TCP port:
+        sock_addr = ('', sock_info_or_port)
+    self.create_socket(sock_family, sock_type)
     self.set_reuse_addr()
-    self.bind(('', port))
+    self.bind(sock_addr)
     self.listen(max_queued_connections)
 
   def handle_accept(self):
@@ -89,7 +99,7 @@ class AsyncPpyMilterServer(asyncore.dispatcher):
       logging.error('warning: server accept() threw an exception ("%s")',
                         str(e))
       return
-    AsyncPpyMilterServer.ConnectionHandler(conn, addr, self.__milter_class)
+    AsyncPpyMilterServer.ConnectionHandler(conn, addr, self.__milter_class, self.map)
 
 
   class ConnectionHandler(asynchat.async_chat):
@@ -100,7 +110,7 @@ class AsyncPpyMilterServer(asyncore.dispatcher):
     """
 
     # TODO: allow milter dispatcher to be overridden (PpyMilterDispatcher)?
-    def __init__(self, conn, addr, milter_class):
+    def __init__(self, conn, addr, milter_class, map=None):
       """A connection handling class to manage communication on this socket.
 
       Args:
@@ -109,7 +119,7 @@ class AsyncPpyMilterServer(asyncore.dispatcher):
         milter_class: A class (not an instance) that handles callbacks for
                       milter commands (e.g. a child of the PpyMilter class).
       """
-      asynchat.async_chat.__init__(self, conn)
+      asynchat.async_chat.__init__(self, conn, map)
       self.__conn = conn
       self.__addr = addr
       self.__milter_dispatcher = ppymilterbase.PpyMilterDispatcher(milter_class)
