@@ -156,7 +156,7 @@ class PpyMilterDispatcher(object):
   per socket connection.  One milter_class instance per PpyMilterDispatcher
   (per socket connection)."""
 
-  def __init__(self, milter_class):
+  def __init__(self, milter_class, context = None):
     """Construct a PpyMilterDispatcher and create a private
     milter_class instance.
 
@@ -164,7 +164,10 @@ class PpyMilterDispatcher(object):
       milter_class: A class (not an instance) that handles callbacks for
                     milter commands (e.g. a child of the PpyMilter class).
     """
-    self.__milter = milter_class()
+    if context is not None:
+        self.__milter = milter_class(context)
+    else:
+        self.__milter = milter_class()
 
 
   def Dispatch(self, data):

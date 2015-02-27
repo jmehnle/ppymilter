@@ -65,7 +65,7 @@ class AsyncPpyMilterServer(asyncore.dispatcher):
   """
 
   # TODO: allow network socket interface to be overridden
-  def __init__(self, sock_info_or_port, milter_class, max_queued_connections=1024, map=None):
+  def __init__(self, sock_info_or_port, milter_class, max_queued_connections=1024, map=None, context=None):
     """Constructs an AsyncPpyMilterServer.
 
     Args:
@@ -76,7 +76,8 @@ class AsyncPpyMilterServer(asyncore.dispatcher):
       max_queued_connections: Maximum number of connections to allow to
                               queue up on socket awaiting accept().
     """
-    self.map = map
+    self.map     = map
+    self.context = context
     asyncore.dispatcher.__init__(self, map=self.map)
     self.__milter_class = milter_class
     sock_family = socket.AF_INET
@@ -100,7 +101,7 @@ class AsyncPpyMilterServer(asyncore.dispatcher):
       logger.error('warning: server accept() threw an exception ("%s")',
                         str(e))
       return
-    AsyncPpyMilterServer.ConnectionHandler(conn, addr, self.__milter_class, self.map)
+    AsyncPpyMilterServer.ConnectionHandler(conn, addr, self.__milter_class, self.map, self.context)
 
 
   class ConnectionHandler(asynchat.async_chat):
@@ -111,7 +112,7 @@ class AsyncPpyMilterServer(asyncore.dispatcher):
     """
 
     # TODO: allow milter dispatcher to be overridden (PpyMilterDispatcher)?
-    def __init__(self, conn, addr, milter_class, map=None):
+    def __init__(self, conn, addr, milter_class, map=None, context=None):
       """A connection handling class to manage communication on this socket.
 
       Args:
@@ -123,7 +124,7 @@ class AsyncPpyMilterServer(asyncore.dispatcher):
       asynchat.async_chat.__init__(self, conn, map)
       self.__conn = conn
       self.__addr = addr
-      self.__milter_dispatcher = ppymilterbase.PpyMilterDispatcher(milter_class)
+      self.__milter_dispatcher = ppymilterbase.PpyMilterDispatcher(milter_class, context)
       self.__input = []
       self.set_terminator(MILTER_LEN_BYTES)
       self.found_terminator = self.read_packetlen
@@ -184,10 +185,11 @@ class ThreadedPpyMilterServer(SocketServer.ThreadingTCPServer):
 
   allow_reuse_address = True
 
-  def __init__(self, port, milter_class):
+  def __init__(self, port, milter_class, context=None):
     SocketServer.ThreadingTCPServer.__init__(self, ('', port),
                                     ThreadedPpyMilterServer.ConnectionHandler)
     self.milter_class = milter_class
+    self.context = context
     self.loop = self.serve_forever
 
 
@@ -195,7 +197,7 @@ class ThreadedPpyMilterServer(SocketServer.ThreadingTCPServer):
     def setup(self):
       self.request.setblocking(True)
       self.__milter_dispatcher = ppymilterbase.PpyMilterDispatcher(
-          self.server.milter_class)
+          self.server.milter_class, self.server.context)
 
     def __send_response(self, response):
       """Send data down the milter socket.
