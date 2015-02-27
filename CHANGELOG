@@ -1,3 +1,10 @@
+### Release 1.0.3
+
+* ppymilterbase.PpyMilterDispatcher, ppymilterserver.{Async,Threaded}PpyMilter-
+  Server now allow an arbitrary context argument to be passed, which is passed
+  to milter_class.__init__. This facility may be used to pass options or shared
+  state.
+
 ### Release 1.0.2
 
 * ppymilterserver.AsyncPpyMilterServer: Arbitrary socket support, map support:
