@@ -33,6 +33,8 @@ import struct
 import sys
 import types
 
+logger = logging.getLogger('ppymilter')
+
 
 MILTER_VERSION = 2 # Milter version we claim to speak (from pmilter)
 
@@ -187,18 +189,18 @@ class PpyMilterDispatcher(object):
     (cmd, data) = (data[0], data[1:])
     try:
       if cmd not in COMMANDS:
-        logging.warn('Unknown command code: "%s" ("%s")', cmd, data)
+        logger.warn('Unknown command code: "%s" ("%s")', cmd, data)
         return RESPONSE['CONTINUE']
       command = COMMANDS[cmd]
       parser_callback_name = '_Parse%s' % command
       handler_callback_name = 'On%s' % command
 
       if not hasattr(self, parser_callback_name):
-        logging.error('No parser implemented for "%s"', command)
+        logger.error('No parser implemented for "%s"', command)
         return RESPONSE['CONTINUE']
 
       if not hasattr(self.__milter, handler_callback_name):
-        logging.warn('Unimplemented command: "%s" ("%s")', command, data)
+        logger.warn('Unimplemented command: "%s" ("%s")', command, data)
         return RESPONSE['CONTINUE']
 
       parser = getattr(self, parser_callback_name)
@@ -206,10 +208,10 @@ class PpyMilterDispatcher(object):
       args = parser(cmd, data)
       return callback(*args)
     except PpyMilterTempFailure, e:
-      logging.info('Temp Failure: %s', str(e))
+      logger.info('Temp Failure: %s', str(e))
       return RESPONSE['TEMPFAIL']
     except PpyMilterPermFailure, e:
-      logging.info('Perm Failure: %s', str(e))
+      logger.info('Perm Failure: %s', str(e))
       return RESPONSE['REJECT']
     return RESPONSE['CONTINUE']
 
@@ -566,7 +568,7 @@ class PpyMilter(object):
     try:
       self.OnResetState()
     except AttributeError:
-      logging.warn('No OnResetState() callback is defined for this milter.')
+      logger.warn('No OnResetState() callback is defined for this milter.')
 
   # you probably should not be overriding this  :-p
   def OnOptNeg(self, cmd, ver, actions, protocol):
@@ -660,6 +662,6 @@ class PpyMilter(object):
 
   def __VerifyCapability(self, action):
     if not (self.__actions & action):
-      logging.error('Error: Attempted to perform an action that was not' +
+      logger.error('Error: Attempted to perform an action that was not' +
                      'requested.')
       raise PpyMilterActionError('Action not requested in __init__')

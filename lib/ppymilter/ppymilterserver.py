@@ -54,6 +54,7 @@ import time
 
 import ppymilterbase
 
+logger = logging.getLogger('ppymilter')
 
 MILTER_LEN_BYTES = 4  # from sendmail's include/libmilter/mfdef.h
 
@@ -96,7 +97,7 @@ class AsyncPpyMilterServer(asyncore.dispatcher):
     try:
       (conn, addr) = self.accept()
     except socket.error, e:
-      logging.error('warning: server accept() threw an exception ("%s")',
+      logger.error('warning: server accept() threw an exception ("%s")',
                         str(e))
       return
     AsyncPpyMilterServer.ConnectionHandler(conn, addr, self.__milter_class, self.map)
@@ -134,9 +135,9 @@ class AsyncPpyMilterServer(asyncore.dispatcher):
     def log_info(self, message, type='info'):
       """Provide useful logging for uncaught exceptions"""
       if type == 'info':
-        logging.debug(message)
+        logger.debug(message)
       else:
-        logging.error(message)
+        logger.error(message)
 
     def read_packetlen(self):
       """Callback from asynchat once we have an integer accumulated in our
@@ -152,7 +153,7 @@ class AsyncPpyMilterServer(asyncore.dispatcher):
       Args:
         response: The data to send.
       """
-      logging.debug('  >>> %s', binascii.b2a_qp(response[0]))
+      logger.debug('  >>> %s', binascii.b2a_qp(response[0]))
       self.push(struct.pack('!I', len(response)))
       self.push(response)
 
@@ -162,7 +163,7 @@ class AsyncPpyMilterServer(asyncore.dispatcher):
       (which is the milter command + data to send to the dispatcher)."""
       inbuff = "".join(self.__input)
       self.__input = []
-      logging.debug('  <<< %s', binascii.b2a_qp(inbuff))
+      logger.debug('  <<< %s', binascii.b2a_qp(inbuff))
       try:
         response = self.__milter_dispatcher.Dispatch(inbuff)
         if type(response) == list:
@@ -175,7 +176,7 @@ class AsyncPpyMilterServer(asyncore.dispatcher):
         self.found_terminator = self.read_packetlen
         self.set_terminator(MILTER_LEN_BYTES)
       except ppymilterbase.PpyMilterCloseConnection, e:
-        logging.info('Closing connection ("%s")', str(e))
+        logger.info('Closing connection ("%s")', str(e))
         self.close()
 
 
@@ -202,7 +203,7 @@ class ThreadedPpyMilterServer(SocketServer.ThreadingTCPServer):
       Args:
         response: the data to send
       """
-      logging.debug('  >>> %s', binascii.b2a_qp(response[0]))
+      logger.debug('  >>> %s', binascii.b2a_qp(response[0]))
       self.request.send(struct.pack('!I', len(response)))
       self.request.send(response)
 
@@ -218,7 +219,7 @@ class ThreadedPpyMilterServer(SocketServer.ThreadingTCPServer):
             inbuf.append(partial_data)
             read += len(partial_data)
           data = "".join(inbuf)
-          logging.debug('  <<< %s', binascii.b2a_qp(data))
+          logger.debug('  <<< %s', binascii.b2a_qp(data))
           try:
             response = self.__milter_dispatcher.Dispatch(data)
             if type(response) == list:
@@ -227,14 +228,14 @@ class ThreadedPpyMilterServer(SocketServer.ThreadingTCPServer):
             elif response:
               self.__send_response(response)
           except ppymilterbase.PpyMilterCloseConnection, e:
-            logging.info('Closing connection ("%s")', str(e))
+            logger.info('Closing connection ("%s")', str(e))
             break
       except Exception:
         # use similar error production as asyncore as they already make
         # good 1 line errors - similar to handle_error in asyncore.py
         # proper cleanup happens regardless even if we catch this exception
         (nil, t, v, tbinfo) = asyncore.compact_traceback()
-        logging.error('uncaptured python exception, closing channel %s '
+        logger.error('uncaptured python exception, closing channel %s '
                       '(%s:%s %s)' % (repr(self), t, v, tbinfo))
 
 
