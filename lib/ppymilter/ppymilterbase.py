@@ -56,21 +56,21 @@ SMFIC_DATA    = 'T' # "DATA"
 SMFIC_UNKNOWN = 'U' # "Any unknown command"
 
 COMMANDS = {
-  SMFIC_ABORT: 'Abort',
-  SMFIC_BODY: 'Body',
+  SMFIC_ABORT:   'Abort',
+  SMFIC_BODY:    'Body',
   SMFIC_CONNECT: 'Connect',
-  SMFIC_MACRO: 'Macro',
+  SMFIC_MACRO:   'Macro',
   SMFIC_BODYEOB: 'EndBody',
-  SMFIC_HELO: 'Helo',
-  SMFIC_HEADER: 'Header',
-  SMFIC_MAIL: 'MailFrom',
-  SMFIC_EOH: 'EndHeaders',
-  SMFIC_OPTNEG: 'OptNeg',
-  SMFIC_RCPT: 'RcptTo',
-  SMFIC_QUIT: 'Quit',
-  SMFIC_DATA: 'Data',
+  SMFIC_HELO:    'Helo',
+  SMFIC_HEADER:  'Header',
+  SMFIC_MAIL:    'MailFrom',
+  SMFIC_EOH:     'EndHeaders',
+  SMFIC_OPTNEG:  'OptNeg',
+  SMFIC_RCPT:    'RcptTo',
+  SMFIC_QUIT:    'Quit',
+  SMFIC_DATA:    'Data',
   SMFIC_UNKNOWN: 'Unknown',
-  }
+}
 
 # To register/mask callbacks during milter protocol negotiation with sendmail.
 # From sendmail's include/libmilter/mfdef.h
@@ -463,7 +463,7 @@ class PpyMilter(object):
       code: Integer or digit string (should be \d\d\d).  NOTICE: A '421' reply
             code will cause sendmail to close the connection after responding!
             (https://www.sendmail.org/releases/8.13.0.html)
-      text: Code reason/explaination to send to the user.
+      text: Code reason/explanation to send to the user.
     """
     return '%s%s %s\0' % (RESPONSE['REPLYCODE'], code, text)
 
