@@ -1,3 +1,15 @@
+### Release 1.0.2
+
+* ppymilterserver.AsyncPpyMilterServer: Arbitrary socket support, map support:
+  Alternatively to a TCP port number, ppymilterserver.AsyncPpyMilterServer
+  constructor now accepts arbitrary socket info in (family, address) tuple
+  format, either (socket.AF_INET, (host, port)) for TCP sockets or
+  (socket.AF_UNIX, socket_path) for UNIX domain sockets. Also constructor now
+  accepts an optional socket/channel map argument for use by asyncore.
+* Strip \0 byte terminator from OnHeader value argument.
+* Use 'ppymilter' logger instead of root logger.
+* Use setuptools, not distutils. distutils is obsolete.
+
 ### Release 1.0.1
 
 * Fork to GitHub: https://github.com/jmehnle/ppymilter
