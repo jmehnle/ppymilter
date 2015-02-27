@@ -76,14 +76,15 @@ COMMANDS = {
 # From sendmail's include/libmilter/mfdef.h
 NO_CALLBACKS = 127  # (all seven callback flags set: 1111111)
 CALLBACKS = {
-  'OnConnect':    1,  # 0x01 SMFIP_NOCONNECT # Skip SMFIC_CONNECT
-  'OnHelo':       2,  # 0x02 SMFIP_NOHELO    # Skip SMFIC_HELO
-  'OnMailFrom':   4,  # 0x04 SMFIP_NOMAIL    # Skip SMFIC_MAIL
-  'OnRcptTo':     8,  # 0x08 SMFIP_NORCPT    # Skip SMFIC_RCPT
-  'OnBody':       16, # 0x10 SMFIP_NOBODY    # Skip SMFIC_BODY
-  'OnHeader':     32, # 0x20 SMFIP_NOHDRS    # Skip SMFIC_HEADER
-  'OnEndHeaders': 64, # 0x40 SMFIP_NOEOH     # Skip SMFIC_EOH
-  }
+  'OnConnect':    0x00000001L,  # SMFIP_NOCONNECT # Skip SMFIC_CONNECT
+  'OnHelo':       0x00000002L,  # SMFIP_NOHELO    # Skip SMFIC_HELO
+  'OnMailFrom':   0x00000004L,  # SMFIP_NOMAIL    # Skip SMFIC_MAIL
+  'OnRcptTo':     0x00000008L,  # SMFIP_NORCPT    # Skip SMFIC_RCPT
+  'OnData':       0x00000200L,  # SMFIP_NODATA    # Skip SMFIC_DATA
+  'OnHeader':     0x00000020L,  # SMFIP_NOHDRS    # Skip SMFIC_HEADER
+  'OnEndHeaders': 0x00000040L,  # SMFIP_NOEOH     # Skip SMFIC_EOH
+  'OnBody':       0x00000010L,  # SMFIP_NOBODY    # Skip SMFIC_BODY
+}
 
 # Acceptable response commands/codes to return to sendmail (with accompanying
 # command data).  From sendmail's include/libmilter/mfdef.h
