@@ -88,24 +88,23 @@ CALLBACKS = {
 # Acceptable response commands/codes to return to sendmail (with accompanying
 # command data).  From sendmail's include/libmilter/mfdef.h
 RESPONSE = {
-    'ADDRCPT'    : '+', # SMFIR_ADDRCPT    # "add recipient"
-    'DELRCPT'    : '-', # SMFIR_DELRCPT    # "remove recipient"
-    'ACCEPT'     : 'a', # SMFIR_ACCEPT     # "accept"
-    'REPLBODY'   : 'b', # SMFIR_REPLBODY   # "replace body (chunk)"
-    'CONTINUE'   : 'c', # SMFIR_CONTINUE   # "continue"
-    'DISCARD'    : 'd', # SMFIR_DISCARD    # "discard"
-    'CONNFAIL'   : 'f', # SMFIR_CONN_FAIL  # "cause a connection failure"
-    'ADDHEADER'  : 'h', # SMFIR_ADDHEADER  # "add header"
-    'INSHEADER'  : 'i', # SMFIR_INSHEADER  # "insert header"
-    'CHGHEADER'  : 'm', # SMFIR_CHGHEADER  # "change header"
-    'PROGRESS'   : 'p', # SMFIR_PROGRESS   # "progress"
-    'QUARANTINE' : 'q', # SMFIR_QUARANTINE # "quarantine"
-    'REJECT'     : 'r', # SMFIR_REJECT     # "reject"
-    'SETSENDER'  : 's', # v3 only?
-    'TEMPFAIL'   : 't', # SMFIR_TEMPFAIL   # "tempfail"
-    'REPLYCODE'  : 'y', # SMFIR_REPLYCODE  # "reply code etc"
-    }
-
+  'ADDRCPT':    '+', # SMFIR_ADDRCPT    # "add recipient"
+  'DELRCPT':    '-', # SMFIR_DELRCPT    # "remove recipient"
+  'ACCEPT':     'a', # SMFIR_ACCEPT     # "accept"
+  'REPLBODY':   'b', # SMFIR_REPLBODY   # "replace body (chunk)"
+  'CONTINUE':   'c', # SMFIR_CONTINUE   # "continue"
+  'DISCARD':    'd', # SMFIR_DISCARD    # "discard"
+  'CONNFAIL':   'f', # SMFIR_CONN_FAIL  # "cause a connection failure"
+  'ADDHEADER':  'h', # SMFIR_ADDHEADER  # "add header"
+  'INSHEADER':  'i', # SMFIR_INSHEADER  # "insert header"
+  'CHGHEADER':  'm', # SMFIR_CHGHEADER  # "change header"
+  'PROGRESS':   'p', # SMFIR_PROGRESS   # "progress"
+  'QUARANTINE': 'q', # SMFIR_QUARANTINE # "quarantine"
+  'REJECT':     'r', # SMFIR_REJECT     # "reject"
+  'SETSENDER':  's', # v3 only?
+  'TEMPFAIL':   't', # SMFIR_TEMPFAIL   # "tempfail"
+  'REPLYCODE':  'y', # SMFIR_REPLYCODE  # "reply code etc"
+}
 
 def printchar(char):
   """Useful debugging function for milter developers."""
