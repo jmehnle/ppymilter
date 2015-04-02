@@ -1,3 +1,14 @@
+### Release 1.0.4
+
+* ppymilterbase.PpyMilterDispatcher now allows an on_error callback to be
+  passed, which is called in case of an unhandled exception in the milter.
+  This callback must return the value False if it wants the exception to be
+  re-raised; otherwise, such as if None is returned, it is assumed that the
+  exception has been handled.
+  ppymilterserver.{Async,Threaded}PpyMilterServer invoke their own (new)
+  handle_error methods via this facility; override them to define your own
+  catch-all exception handling for your milter.
+
 ### Release 1.0.3
 
 * ppymilterbase.PpyMilterDispatcher, ppymilterserver.{Async,Threaded}PpyMilter-
