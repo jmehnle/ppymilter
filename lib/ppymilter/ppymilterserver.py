@@ -101,8 +101,10 @@ class AsyncPpyMilterServer(asyncore.dispatcher):
       logger.error('warning: server accept() threw an exception ("%s")',
                         str(e))
       return
-    AsyncPpyMilterServer.ConnectionHandler(conn, addr, self.__milter_class, self.map, self.context)
+    AsyncPpyMilterServer.ConnectionHandler(conn, addr, self.__milter_class, self.map, self.handle_error, self.context)
 
+  def handle_error(self, exception):
+    return False
 
   class ConnectionHandler(asynchat.async_chat):
     """A connection handling class that manages communication on a
@@ -112,7 +114,7 @@ class AsyncPpyMilterServer(asyncore.dispatcher):
     """
 
     # TODO: allow milter dispatcher to be overridden (PpyMilterDispatcher)?
-    def __init__(self, conn, addr, milter_class, map=None, context=None):
+    def __init__(self, conn, addr, milter_class, map=None, on_error=None, context=None):
       """A connection handling class to manage communication on this socket.
 
       Args:
@@ -124,7 +126,7 @@ class AsyncPpyMilterServer(asyncore.dispatcher):
       asynchat.async_chat.__init__(self, conn, map)
       self.__conn = conn
       self.__addr = addr
-      self.__milter_dispatcher = ppymilterbase.PpyMilterDispatcher(milter_class, context)
+      self.__milter_dispatcher = ppymilterbase.PpyMilterDispatcher(milter_class, on_error, context)
       self.__input = []
       self.set_terminator(MILTER_LEN_BYTES)
       self.found_terminator = self.read_packetlen
@@ -192,12 +194,15 @@ class ThreadedPpyMilterServer(SocketServer.ThreadingTCPServer):
     self.context = context
     self.loop = self.serve_forever
 
+  def handle_error(self, exception):
+    return False
+
 
   class ConnectionHandler(SocketServer.BaseRequestHandler):
     def setup(self):
       self.request.setblocking(True)
       self.__milter_dispatcher = ppymilterbase.PpyMilterDispatcher(
-          self.server.milter_class, self.server.context)
+          self.server.milter_class, self.server.handle_error, self.server.context)
 
     def __send_response(self, response):
       """Send data down the milter socket.

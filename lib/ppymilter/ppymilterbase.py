@@ -156,7 +156,7 @@ class PpyMilterDispatcher(object):
   per socket connection.  One milter_class instance per PpyMilterDispatcher
   (per socket connection)."""
 
-  def __init__(self, milter_class, context = None):
+  def __init__(self, milter_class, on_error = None, context = None):
     """Construct a PpyMilterDispatcher and create a private
     milter_class instance.
 
@@ -168,6 +168,7 @@ class PpyMilterDispatcher(object):
         self.__milter = milter_class(context)
     else:
         self.__milter = milter_class()
+    self.__on_error = on_error
 
 
   def Dispatch(self, data):
@@ -210,12 +211,19 @@ class PpyMilterDispatcher(object):
       callback = getattr(self.__milter, handler_callback_name)
       args = parser(cmd, data)
       return callback(*args)
-    except PpyMilterTempFailure, e:
+    except PpyMilterTempFailure as e:
       logger.info('Temp Failure: %s', str(e))
       return RESPONSE['TEMPFAIL']
-    except PpyMilterPermFailure, e:
+    except PpyMilterPermFailure as e:
       logger.info('Perm Failure: %s', str(e))
       return RESPONSE['REJECT']
+    except PpyMilterException:
+      raise
+    except Exception as e:
+      if self.__on_error and self.__on_error(e) is not False:
+        pass  # Assume error has been handled.
+      else:
+        raise
     return RESPONSE['CONTINUE']
 
   def _ParseOptNeg(self, cmd, data):
