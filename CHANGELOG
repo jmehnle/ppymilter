@@ -1,3 +1,12 @@
+### Release 1.0.5
+
+* Do not sent a response, 'c' (continue) or otherwise, to an 'A' (Abort)
+  message; the milter protocol expects no response to 'A'.
+  This fixes a bug where ppymilter would confuse the MTA with extraneous 'c'
+  (continue) responses after receiving an 'A' (Abort) message, such as when a
+  message is discarded and further messages are sent in the same SMTP
+  transaction.
+
 ### Release 1.0.4
 
 * ppymilterbase.PpyMilterDispatcher now allows an on_error callback to be
