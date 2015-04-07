@@ -625,7 +625,7 @@ class PpyMilter(object):
       will be processed.
     """
     self.__ResetState()
-    return self.Continue()
+    return
 
   def OnEndBody(self, cmd):
     """Callback for the 'EndBody' milter command.
