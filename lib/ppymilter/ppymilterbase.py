@@ -219,8 +219,8 @@ class PpyMilterDispatcher(object):
       return RESPONSE['REJECT']
     except PpyMilterException:
       raise
-    except Exception as e:
-      if self.__on_error and self.__on_error(e) is not False:
+    except Exception:
+      if self.__on_error and self.__on_error() is not False:
         pass  # Assume error has been handled.
       else:
         raise

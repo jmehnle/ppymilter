@@ -103,7 +103,7 @@ class AsyncPpyMilterServer(asyncore.dispatcher):
       return
     AsyncPpyMilterServer.ConnectionHandler(conn, addr, self.__milter_class, self.map, self.handle_error, self.context)
 
-  def handle_error(self, exception):
+  def handle_error(self):
     return False
 
   class ConnectionHandler(asynchat.async_chat):
@@ -194,7 +194,7 @@ class ThreadedPpyMilterServer(SocketServer.ThreadingTCPServer):
     self.context = context
     self.loop = self.serve_forever
 
-  def handle_error(self, exception):
+  def handle_error(self):
     return False
 
 
