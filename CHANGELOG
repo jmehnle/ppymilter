@@ -1,3 +1,9 @@
+### Release 1.0.6
+
+* ppymilterserver.{Async,Threaded}PpyMilterServer.handle_error: Accept 0
+  arguments (besides self); the last exception can (and should) be determined
+  independently.
+
 ### Release 1.0.5
 
 * Do not sent a response, 'c' (continue) or otherwise, to an 'A' (Abort)
