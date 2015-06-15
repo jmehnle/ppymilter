@@ -96,7 +96,10 @@ class AsyncPpyMilterServer(asyncore.dispatcher):
   def handle_accept(self):
     """Callback function from asyncore to handle a connection dispatching."""
     try:
-      (conn, addr) = self.accept()
+      connaddr = self.accept()
+      if connaddr is None:
+        return
+      (conn, addr) = connaddr
     except socket.error, e:
       logger.error('warning: server accept() threw an exception ("%s")',
                         str(e))
