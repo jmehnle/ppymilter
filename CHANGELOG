@@ -1,3 +1,9 @@
+### Release 1.0.7
+
+* ppymilterserver.AsyncPpyMilterServer.handle_accept: Gracefully handle
+  multiple processes trying to accept an incoming connection (socket.accept()
+  returning None for all but one process).
+
 ### Release 1.0.6
 
 * ppymilterserver.{Async,Threaded}PpyMilterServer.handle_error: Accept 0

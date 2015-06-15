@@ -18,7 +18,7 @@
 from setuptools import setup
 
 setup(name='ppymilter',
-      version='1.0.6',
+      version='1.0.7',
       description='Pure Python Milter Library',
       author='Eric DeFriez, Julian Mehnle',
       author_email='julian@mehnle.net',
